@@ -1,0 +1,18 @@
+Package: GeneSetDb.MSigDB.Hsapiens.v61
+Title: Human MSigDB genesets GeneSetDb object (v6.1)
+Description: Provides the MSigDB genesets as a GeneSetDb object
+  with human Entrez Identifiers.
+Version: 0.99.0
+Author: Steve Lianoglou
+Maintainer: Steve Lianoglou <lianoglou.steve@gene.com>
+Depends: multiGSEA
+License: Artistic-2.0
+organism: Homo_sapiens
+species: Homo_sapiens
+provider: MSigDB
+provider_version: 6.1
+release_date: Mon Nov 20 09:00:00 2017
+resource_url: localhost
+biocViews: AnnotationData
+NeedsCompilation: no
+
