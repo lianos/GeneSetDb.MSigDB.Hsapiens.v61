@@ -4,7 +4,7 @@
 ## This script is meant to be run in an R session with a working directory
 ## that is set to the inst/extdata/scripts directory of this package.
 ##
-## The user needs to download the *.xml version of the latest MSigDB gene set 
+## The user needs to download the *.xml version of the latest MSigDB gene set
 ## definitions, which we parse and convert into a GeneSetDb object.
 ##
 ## This file is downloaded from:
@@ -22,7 +22,7 @@ library(org.Hs.eg.db)
 fn <- '~/Downloads/msigdb_v6.1.xml'
 
 ## Some utility functions that were extracted from GSEABase. ==================
-## 
+##
 ## I am modifying it here, because some 'factories' are not recognized
 ## (for category == 'archived' for instance) and I don't want the whole thing
 ## to fail
@@ -171,5 +171,55 @@ for (col in unique(geneSets(gdb)$collection)) {
 org(gdb) <- 'Homo_sapiens'
 
 # gdb.fn <- sprintf('MSigDB.Homo_sapiens.GeneSetDb.rds', species)
-gdb.fn <- '../extdata/GeneSetDb.MSigDB.Hsapiens.v61.rds'
+gdb.fn <- '../extdata/GeneSetDb.MSigDB.Hsapiens-entrez.v61.rds'
 saveRDS(gdb, gdb.fn)
+
+# Create Ensembl version -------------------------------------------------------
+library(multiGSEA)
+library(biomaRt)
+library(dplyr)
+library(GSEABase)
+library(dtplyr)
+
+hgdb <- gdb
+# hgdb <- readRDS("inst/extdata/GeneSetDb.MSigDB.Hsapiens-entrez.v61.rds")
+hdf <- hgdb@db
+mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+exref <- getBM(
+  attributes = c("entrezgene", "ensembl_gene_id", "hgnc_symbol"),
+  filters = "entrezgene",
+  values = unique(hdf$featureId),
+  mart = mart) %>%
+  transmute(entrezgene = as.character(entrezgene),
+            featureId = ensembl_gene_id, symbol = hgnc_symbol)
+
+hdf.ens <- hdf %>%
+  as.data.frame(stringsAsFactors = FALSE) %>%
+  dplyr::select(collection, name, entrezgene = featureId) %>%
+  dplyr::inner_join(exref, by = "entrezgene") %>%
+  dplyr::arrange(collection, name, symbol) %>%
+  dplyr::distinct(collection, name, featureId, .keep_all = TRUE) %>%
+  dplyr::select(-entrezgene)
+
+gdb2 <- GeneSetDb(hdf.ens)
+take.cols <- c('collection', 'name', setdiff(colnames(hgdb@table), colnames(gdb2@table)))
+meta <- hgdb@table[gdb2@table, take.cols, with=FALSE]
+mnew <- gdb2@table[meta]
+stopifnot(
+  all.equal(gdb2@table[, list(collection, name)], mnew[, list(collection, name)]),
+  all.equal(gdb2@table$N, mnew$N))
+gdb2@table <- mnew
+
+url.fn <- function(collection, name) {
+  url <- "http://www.broadinstitute.org/gsea/msigdb/cards/%s.html"
+  sprintf(url, name)
+}
+for (col in unique(geneSets(gdb2)$collection)) {
+  geneSetCollectionURLfunction(gdb2, col) <- url.fn
+  featureIdType(gdb2, col) <- ENSEMBLIdentifier()
+  gdb2 <- addCollectionMetadata(gdb2, col, 'source', 'MSigDB_v6.1')
+}
+
+org(gdb2) <- 'Homo_sapiens'
+gdb.fn <- '../extdata/GeneSetDb.MSigDB.Hsapiens-ensembl.v61.rds'
+saveRDS(gdb2, gdb.fn)
