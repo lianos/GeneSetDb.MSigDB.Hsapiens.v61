@@ -201,6 +201,7 @@ hdf.ens <- hdf %>%
   dplyr::distinct(collection, name, featureId, .keep_all = TRUE) %>%
   dplyr::select(-entrezgene)
 
+# Use addGeneSetMetadata function instead of this stuff in the future
 gdb2 <- GeneSetDb(hdf.ens)
 take.cols <- c('collection', 'name', setdiff(colnames(hgdb@table), colnames(gdb2@table)))
 meta <- hgdb@table[gdb2@table, take.cols, with=FALSE]
