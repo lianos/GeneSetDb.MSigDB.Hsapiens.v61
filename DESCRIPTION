@@ -5,7 +5,6 @@ Description: Provides the MSigDB genesets as a GeneSetDb object
 Version: 0.99.1
 Author: Steve Lianoglou
 Maintainer: Steve Lianoglou <lianoglou.steve@gene.com>
-Depends: multiGSEA
 License: Artistic-2.0
 organism: Homo_sapiens
 species: Homo_sapiens
